@@ -7,7 +7,7 @@ from helpers import (
     get_gemini_response, 
     init_chat_session
 )
-from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, PAGE_CONFIG
+from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, VIDEO_PROMPTS, AUDIO_PROMPTS, PAGE_CONFIG
 
 # Configure Streamlit page
 st.set_page_config(**PAGE_CONFIG)
@@ -62,18 +62,29 @@ if 'chat' in st.session_state:
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.chat_message("assistant").markdown(response)
 
-# Image upload and analysis
+# File upload and analysis
 if 'chat' in st.session_state:
-    uploaded_file = st.file_uploader("Upload an image for analysis", type=['png', 'jpg', 'jpeg'])
+    uploaded_file = st.file_uploader("Upload an image, video, or audio file for analysis", 
+                                     type=['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg'])
     if uploaded_file:
-        image = upload_and_process_file(uploaded_file)
-        if image:
-            st.image(image, caption='Uploaded Image', use_column_width=True)
+        processed_file = upload_and_process_file(uploaded_file)
+        if processed_file:
+            if uploaded_file.type.startswith('image/'):
+                st.image(processed_file, caption='Uploaded Image', use_column_width=True)
+                prompts = IMAGE_PROMPTS
+            elif uploaded_file.type.startswith('video/'):
+                st.image(processed_file, caption='Video Thumbnail', use_column_width=True)
+                st.video(uploaded_file)
+                prompts = VIDEO_PROMPTS
+            elif uploaded_file.type.startswith('audio/'):
+                st.image(processed_file, caption='Audio Waveform', use_column_width=True)
+                st.audio(uploaded_file)
+                prompts = AUDIO_PROMPTS
             
-            cols = st.columns(len(IMAGE_PROMPTS))
-            for i, (action, prompt) in enumerate(IMAGE_PROMPTS.items()):
+            cols = st.columns(len(prompts))
+            for i, (action, prompt) in enumerate(prompts.items()):
                 if cols[i].button(action):
-                    response = get_gemini_response(st.session_state.chat, prompt, image)
+                    response = get_gemini_response(st.session_state.chat, prompt, processed_file)
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     st.chat_message("assistant").markdown(response)
 
