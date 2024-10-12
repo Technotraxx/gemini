@@ -6,18 +6,24 @@ import google.generativeai as genai
 import moviepy.editor as mp
 import soundfile as sf
 import numpy as np
+import matplotlib.pyplot as plt
+import tempfile
+import os
 
 def upload_and_process_file(uploaded_file):
     if uploaded_file is not None:
         file_extension = mimetypes.guess_extension(uploaded_file.type)
-        if file_extension in ['.png', '.jpg', '.jpeg']:
-            return process_image(uploaded_file)
-        elif file_extension in ['.mp4', '.avi', '.mov']:
-            return process_video(uploaded_file)
-        elif file_extension in ['.mp3', '.wav', '.ogg']:
-            return process_audio(uploaded_file)
-        else:
-            st.error(f"Unsupported file type: {file_extension}")
+        try:
+            if file_extension in ['.png', '.jpg', '.jpeg']:
+                return process_image(uploaded_file)
+            elif file_extension in ['.mp4', '.avi', '.mov']:
+                return process_video(uploaded_file)
+            elif file_extension in ['.mp3', '.wav', '.ogg']:
+                return process_audio(uploaded_file)
+            else:
+                st.error(f"Unsupported file type: {file_extension}")
+        except Exception as e:
+            st.error(f"Error processing file: {str(e)}")
     return None
 
 def process_image(uploaded_file):
@@ -25,41 +31,35 @@ def process_image(uploaded_file):
     return image
 
 def process_video(uploaded_file):
-    # Save the uploaded file temporarily
-    temp_path = f"temp_video{mimetypes.guess_extension(uploaded_file.type)}"
-    with open(temp_path, "wb") as f:
-        f.write(uploaded_file.getvalue())
-    
-    # Load the video and extract the first frame as a thumbnail
-    video = mp.VideoFileClip(temp_path)
-    thumbnail = video.get_frame(0)
-    thumbnail_image = Image.fromarray(thumbnail)
-    
-    # Clean up
-    video.close()
-    import os
-    os.remove(temp_path)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
+        temp_file.write(uploaded_file.getvalue())
+        temp_path = temp_file.name
+
+    try:
+        video = mp.VideoFileClip(temp_path)
+        thumbnail = video.get_frame(0)
+        thumbnail_image = Image.fromarray(thumbnail)
+        video.close()
+    finally:
+        os.unlink(temp_path)
     
     return thumbnail_image
 
 def process_audio(uploaded_file):
-    # Read the audio file
-    audio_data, sample_rate = sf.read(io.BytesIO(uploaded_file.getvalue()))
-    
-    # Generate a simple waveform image
-    plt.figure(figsize=(10, 2))
-    plt.plot(audio_data)
-    plt.axis('off')
-    
-    # Save the plot to a buffer
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    buf.seek(0)
-    
-    # Convert the buffer to an image
-    waveform_image = Image.open(buf)
-    
-    return waveform_image
+    try:
+        audio_data, sample_rate = sf.read(io.BytesIO(uploaded_file.getvalue()))
+        plt.figure(figsize=(10, 2))
+        plt.plot(audio_data)
+        plt.axis('off')
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        waveform_image = Image.open(buf)
+        plt.close()
+        return waveform_image
+    except Exception as e:
+        st.error(f"Error processing audio file: {str(e)}")
+        return None
 
 def manage_chat_session(model, history):
     if not history or history[-1]['role'] == 'user':
@@ -74,13 +74,21 @@ def display_chat_history(messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-def get_gemini_response(chat, user_input, image=None):
-    if image:
-        response = chat.send_message([user_input, image])
-    else:
-        response = chat.send_message(user_input)
-    return response.text
+def get_gemini_response(chat, user_input, file=None):
+    try:
+        if file:
+            response = chat.send_message([user_input, file])
+        else:
+            response = chat.send_message(user_input)
+        return response.text
+    except Exception as e:
+        st.error(f"Error getting Gemini response: {str(e)}")
+        return None
 
 def init_chat_session(model_name):
-    model = genai.GenerativeModel(model_name)
-    return model.start_chat(history=[])
+    try:
+        model = genai.GenerativeModel(model_name)
+        return model.start_chat(history=[])
+    except Exception as e:
+        st.error(f"Error initializing chat session: {str(e)}")
+        return None
