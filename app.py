@@ -2,6 +2,8 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 import io
+from image_prompts import IMAGE_PROMPTS
+
 
 # Configure Streamlit page settings
 st.set_page_config(
