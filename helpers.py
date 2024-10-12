@@ -29,7 +29,6 @@ def upload_to_gemini(uploaded_file):
     with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
         temp_file.write(uploaded_file.getvalue())
         temp_path = temp_file.name
-
     try:
         file = genai.upload_file(temp_path, mime_type=uploaded_file.type)
         wait_for_file_active(file)
@@ -54,37 +53,6 @@ def get_gemini_response(chat, user_input, file=None):
         return response.text
     except Exception as e:
         st.error(f"Error getting Gemini response: {str(e)}")
-        return None
-
-def process_video(uploaded_file):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
-        temp_file.write(uploaded_file.getvalue())
-        temp_path = temp_file.name
-
-    try:
-        video = mp.VideoFileClip(temp_path)
-        thumbnail = video.get_frame(0)
-        thumbnail_image = Image.fromarray(thumbnail)
-        video.close()
-    finally:
-        os.unlink(temp_path)
-    
-    return thumbnail_image
-
-def process_audio(uploaded_file):
-    try:
-        audio_data, sample_rate = sf.read(io.BytesIO(uploaded_file.getvalue()))
-        plt.figure(figsize=(10, 2))
-        plt.plot(audio_data)
-        plt.axis('off')
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-        waveform_image = Image.open(buf)
-        plt.close()
-        return waveform_image
-    except Exception as e:
-        st.error(f"Error processing audio file: {str(e)}")
         return None
 
 def manage_chat_session(model, history):
