@@ -7,12 +7,12 @@ import tempfile
 import os
 import time
 
-def upload_and_process_file(uploaded_file):
+def upload_and_process_file(uploaded_file, preview_width=None):
     if uploaded_file is not None:
         file_extension = mimetypes.guess_extension(uploaded_file.type)
         try:
             if uploaded_file.type.startswith('image/'):
-                return process_image(uploaded_file)
+                return process_image(uploaded_file, preview_width)
             elif uploaded_file.type.startswith('video/') or uploaded_file.type.startswith('audio/'):
                 return upload_to_gemini(uploaded_file)
             else:
@@ -21,8 +21,12 @@ def upload_and_process_file(uploaded_file):
             st.error(f"Error processing file: {str(e)}")
     return None
 
-def process_image(uploaded_file):
+def process_image(uploaded_file, preview_width=None):
     image = Image.open(uploaded_file)
+    if preview_width:
+        width, height = image.size
+        new_height = int(height * (preview_width / width))
+        image.thumbnail((preview_width, new_height))
     return image
 
 def upload_to_gemini(uploaded_file):
@@ -75,3 +79,7 @@ def init_chat_session(model_name):
     except Exception as e:
         st.error(f"Error initializing chat session: {str(e)}")
         return None
+
+def clear_chat_history():
+    st.session_state.messages = []
+    st.session_state.chat = init_chat_session(st.session_state.current_model)
