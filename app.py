@@ -72,14 +72,17 @@ if 'chat' in st.session_state:
         image = Image.open(uploaded_file)
         st.image(image, caption='Uploaded Image', use_column_width=True)
         
-        if st.button('Analyze Image'):
-            try:
-                response = st.session_state.chat.send_message([image, "Describe this image"])
-                with st.chat_message("assistant"):
-                    st.markdown(response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-            except Exception as e:
-                st.error(f"Error analyzing image: {str(e)}")
+        # Create a row of buttons
+        cols = st.columns(len(IMAGE_PROMPTS))
+        for i, (action, prompt) in enumerate(IMAGE_PROMPTS.items()):
+            if cols[i].button(action):
+                try:
+                    response = st.session_state.chat.send_message([image, prompt])
+                    with st.chat_message("assistant"):
+                        st.markdown(response.text)
+                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+                except Exception as e:
+                    st.error(f"Error analyzing image: {str(e)}")
 
 else:
     st.info("Enter your API Key in the sidebar to start chatting.")
