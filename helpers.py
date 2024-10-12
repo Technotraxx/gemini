@@ -3,23 +3,18 @@ import mimetypes
 from PIL import Image
 import io
 import google.generativeai as genai
-import moviepy.editor as mp
-import soundfile as sf
-import numpy as np
-import matplotlib.pyplot as plt
 import tempfile
 import os
+import time
 
 def upload_and_process_file(uploaded_file):
     if uploaded_file is not None:
         file_extension = mimetypes.guess_extension(uploaded_file.type)
         try:
-            if file_extension in ['.png', '.jpg', '.jpeg']:
+            if uploaded_file.type.startswith('image/'):
                 return process_image(uploaded_file)
-            elif file_extension in ['.mp4', '.avi', '.mov']:
-                return process_video(uploaded_file)
-            elif file_extension in ['.mp3', '.wav', '.ogg']:
-                return process_audio(uploaded_file)
+            elif uploaded_file.type.startswith('video/') or uploaded_file.type.startswith('audio/'):
+                return upload_to_gemini(uploaded_file)
             else:
                 st.error(f"Unsupported file type: {file_extension}")
         except Exception as e:
@@ -29,6 +24,37 @@ def upload_and_process_file(uploaded_file):
 def process_image(uploaded_file):
     image = Image.open(uploaded_file)
     return image
+
+def upload_to_gemini(uploaded_file):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
+        temp_file.write(uploaded_file.getvalue())
+        temp_path = temp_file.name
+
+    try:
+        file = genai.upload_file(temp_path, mime_type=uploaded_file.type)
+        wait_for_file_active(file)
+        return file
+    finally:
+        os.unlink(temp_path)
+
+def wait_for_file_active(file):
+    while file.state.name == "PROCESSING":
+        st.text("Processing file... Please wait.")
+        time.sleep(5)
+        file = genai.get_file(file.name)
+    if file.state.name != "ACTIVE":
+        raise Exception(f"File {file.name} failed to process")
+
+def get_gemini_response(chat, user_input, file=None):
+    try:
+        if file:
+            response = chat.send_message([user_input, file])
+        else:
+            response = chat.send_message(user_input)
+        return response.text
+    except Exception as e:
+        st.error(f"Error getting Gemini response: {str(e)}")
+        return None
 
 def process_video(uploaded_file):
     with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
@@ -73,17 +99,6 @@ def display_chat_history(messages):
     for message in messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-
-def get_gemini_response(chat, user_input, file=None):
-    try:
-        if file:
-            response = chat.send_message([user_input, file])
-        else:
-            response = chat.send_message(user_input)
-        return response.text
-    except Exception as e:
-        st.error(f"Error getting Gemini response: {str(e)}")
-        return None
 
 def init_chat_session(model_name):
     try:
