@@ -2,6 +2,7 @@ import streamlit as st
 import mimetypes
 from PIL import Image
 import io
+import google.generativeai as genai
 
 def upload_and_process_file(uploaded_file):
     if uploaded_file is not None:
@@ -38,5 +39,4 @@ def get_gemini_response(chat, user_input, image=None):
 
 def init_chat_session(model_name):
     model = genai.GenerativeModel(model_name)
-    st.session_state.chat = model.start_chat(history=[])
-    st.session_state.messages = []
+    return model.start_chat(history=[])
