@@ -32,7 +32,7 @@ PAGE_CONFIG = {
 # Video analysis prompts
 VIDEO_PROMPTS = {
     "Describe Scene": "Describe the main scene in this video thumbnail.",
-    "Identify Objects": "List and describe the main objects visible in this video thumbnail.",
+    "Analyze every 10 frames": "Analyze the video and describe every 10 frames.",
     "Analyze Action": "What action or activity seems to be happening in this video based on the thumbnail?",
     "Suggest Title": "Suggest a title for this video based on the thumbnail.",
 }
