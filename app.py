@@ -73,11 +73,9 @@ if 'chat' in st.session_state:
                 st.image(processed_file, caption='Uploaded Image', use_column_width=True)
                 prompts = IMAGE_PROMPTS
             elif uploaded_file.type.startswith('video/'):
-                st.image(processed_file, caption='Video Thumbnail', use_column_width=True)
                 st.video(uploaded_file)
                 prompts = VIDEO_PROMPTS
             elif uploaded_file.type.startswith('audio/'):
-                st.image(processed_file, caption='Audio Waveform', use_column_width=True)
                 st.audio(uploaded_file)
                 prompts = AUDIO_PROMPTS
             
@@ -87,6 +85,9 @@ if 'chat' in st.session_state:
                     response = get_gemini_response(st.session_state.chat, prompt, processed_file)
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     st.chat_message("assistant").markdown(response)
+
+else:
+    st.info("Enter your API Key in the sidebar to start chatting.")
 
 else:
     st.info("Enter your API Key in the sidebar to start chatting.")
