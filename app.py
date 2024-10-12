@@ -37,9 +37,11 @@ st.title("🤖 Chat with Gemini")
 if api_key:
     try:
         genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(MODEL_OPTIONS[selected_model])
         if 'chat' not in st.session_state or st.session_state.current_model != MODEL_OPTIONS[selected_model]:
             st.session_state.current_model = MODEL_OPTIONS[selected_model]
-            init_chat_session(st.session_state.current_model)
+            st.session_state.chat = model.start_chat(history=[])
+            st.session_state.messages = []
         st.success("API Key configured successfully!")
     except Exception as e:
         st.error(f"Error configuring API Key: {str(e)}")
