@@ -88,6 +88,3 @@ if 'chat' in st.session_state:
 
 else:
     st.info("Enter your API Key in the sidebar to start chatting.")
-
-else:
-    st.info("Enter your API Key in the sidebar to start chatting.")
