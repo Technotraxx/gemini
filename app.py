@@ -72,14 +72,27 @@ if 'chat' in st.session_state:
     uploaded_file = st.file_uploader("Upload an image, video, or audio file for analysis", 
                                      type=['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg'])
     if uploaded_file:
-        preview_width = st.sidebar.slider("Preview Width", 100, 800, 400)
-        processed_file = upload_and_process_file(uploaded_file, preview_width)
+        processed_file = upload_and_process_file(uploaded_file)
         if processed_file:
             if uploaded_file.type.startswith('image/'):
-                st.image(processed_file, caption='Uploaded Image', use_column_width=True)
+                # Display image at 50% of its original size
+                st.image(processed_file, caption='Uploaded Image', use_column_width=False, width=int(processed_file.width * 0.5))
                 prompts = IMAGE_PROMPTS
             elif uploaded_file.type.startswith('video/'):
-                st.video(uploaded_file, start_time=0)
+                # For videos, we'll use a container to limit the width to 50%
+                video_container = st.container()
+                with video_container:
+                    st.video(uploaded_file, start_time=0)
+                st.markdown(
+                    """
+                    <style>
+                    .element-container:has(video) {
+                        width: 50% !important;
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True
+                )
                 prompts = VIDEO_PROMPTS
             elif uploaded_file.type.startswith('audio/'):
                 st.audio(uploaded_file)
