@@ -5,7 +5,8 @@ from helpers import (
     manage_chat_session, 
     display_chat_history, 
     get_gemini_response, 
-    init_chat_session
+    init_chat_session,
+    clear_chat_history
 )
 from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, VIDEO_PROMPTS, AUDIO_PROMPTS, PAGE_CONFIG
 
@@ -30,6 +31,10 @@ with st.sidebar:
         "top_k": top_k,
         "max_output_tokens": max_output_tokens,
     }
+
+    if st.button("Clear Chat"):
+        clear_chat_history()
+        st.experimental_rerun()
 
 # Main chat interface
 st.title("🤖 Chat with Gemini")
@@ -67,13 +72,14 @@ if 'chat' in st.session_state:
     uploaded_file = st.file_uploader("Upload an image, video, or audio file for analysis", 
                                      type=['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg'])
     if uploaded_file:
-        processed_file = upload_and_process_file(uploaded_file)
+        preview_width = st.sidebar.slider("Preview Width", 100, 800, 400)
+        processed_file = upload_and_process_file(uploaded_file, preview_width)
         if processed_file:
             if uploaded_file.type.startswith('image/'):
                 st.image(processed_file, caption='Uploaded Image', use_column_width=True)
                 prompts = IMAGE_PROMPTS
             elif uploaded_file.type.startswith('video/'):
-                st.video(uploaded_file)
+                st.video(uploaded_file, start_time=0)
                 prompts = VIDEO_PROMPTS
             elif uploaded_file.type.startswith('audio/'):
                 st.audio(uploaded_file)
