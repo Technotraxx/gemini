@@ -6,6 +6,7 @@ import google.generativeai as genai
 import tempfile
 import os
 import time
+import cv2
 
 def upload_and_process_file(uploaded_file, preview_width=None):
     if uploaded_file is not None:
@@ -28,6 +29,34 @@ def process_image(uploaded_file, preview_width=None):
         new_height = int(height * (preview_width / width))
         image.thumbnail((preview_width, new_height))
     return image
+
+def extract_video_frames(uploaded_file, interval):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
+        temp_file.write(uploaded_file.getvalue())
+        temp_path = temp_file.name
+
+    try:
+        cap = cv2.VideoCapture(temp_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        frames = []
+        frame_count = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            if frame_count % int(fps * interval) == 0:
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                pil_image = Image.fromarray(rgb_frame)
+                frames.append(pil_image)
+            
+            frame_count += 1
+
+        cap.release()
+        return frames
+    finally:
+        os.unlink(temp_path)
 
 def upload_to_gemini(uploaded_file):
     with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
