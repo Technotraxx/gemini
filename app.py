@@ -60,8 +60,11 @@ with left_column:
 with right_column:
     render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_config, safety_settings if safety_settings else None)
 
-    # Process current analysis or input
+   # Process current analysis or input
     if 'current_analysis' in st.session_state:
+        # Display the user's action in the chat
+        st.chat_message("user").markdown(f"[{st.session_state.current_analysis['action']}] {st.session_state.current_analysis['prompt']}")
+        
         with st.spinner(f"Analyzing with {st.session_state.current_analysis['action']}..."):
             if 'frames' in st.session_state and st.session_state.get('processed_file') and st.session_state.processed_file.type.startswith('video/'):
                 responses = []
@@ -74,7 +77,7 @@ with right_column:
             st.session_state.messages.append({"role": "assistant", "content": response})
             st.chat_message("assistant").markdown(response)
         del st.session_state.current_analysis
-
+        
     if 'current_input' in st.session_state:
         st.session_state.messages.append({"role": "user", "content": st.session_state.current_input['text']})
         st.chat_message("user").markdown(st.session_state.current_input['text'])
