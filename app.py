@@ -19,8 +19,6 @@ if 'messages' not in st.session_state:
     st.session_state.messages = []
 if 'current_model' not in st.session_state:
     st.session_state.current_model = None
-if 'input_key' not in st.session_state:
-    st.session_state.input_key = 0
 
 # Sidebar configuration
 with st.sidebar:
@@ -66,7 +64,6 @@ with left_column:
 
     if st.button("Clear Chat"):
         clear_chat_history()
-        st.session_state.input_key += 1
         st.rerun()
 
     # File upload
@@ -93,15 +90,11 @@ with left_column:
                     st.session_state.current_analysis = {"action": action, "prompt": prompt}
                     st.rerun()
 
-    # Chat input form
-    with st.form(key=f"chat_form_{st.session_state.input_key}"):
-        user_input = st.text_input("Ask Gemini or enter a prompt...", key=f"user_input_{st.session_state.input_key}")
-        submit_button = st.form_submit_button("Send")
-
-    if submit_button and user_input:
+    # Chat input
+    user_input = st.text_input("Ask Gemini or enter a prompt...")
+    if user_input:
         media = st.session_state.get('processed_file')
         st.session_state.current_input = {"text": user_input, "media": media}
-        st.session_state.input_key += 1  # Increment key to clear input on next render
         st.rerun()
 
 with right_column:
