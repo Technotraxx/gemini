@@ -62,8 +62,14 @@ if 'chat' in st.session_state:
         st.session_state.processed_file = upload_and_process_file(uploaded_file)
         if uploaded_file.type.startswith('image/'):
             st.image(st.session_state.processed_file, caption='Uploaded Image', use_column_width=True)
+            prompts = IMAGE_PROMPTS
         elif uploaded_file.type.startswith('video/'):
-            st.video(uploaded_file)
+            # Reduce video player size to 33% of the frame width
+            st.markdown(
+                f'<video width="33%" controls><source src="data:video/mp4;base64,{uploaded_file.getvalue().hex()}" type="video/mp4"></video>',
+                unsafe_allow_html=True
+            )
+            prompts = VIDEO_PROMPTS
             if st.checkbox("Extract frames for analysis"):
                 frame_interval = st.slider("Select frame interval (seconds)", 1, 60, 10)
                 st.session_state.frames = extract_video_frames(uploaded_file, frame_interval)
@@ -71,6 +77,24 @@ if 'chat' in st.session_state:
                 st.image(st.session_state.frames[0], caption="First extracted frame", use_column_width=True)
         elif uploaded_file.type.startswith('audio/'):
             st.audio(uploaded_file)
+            prompts = AUDIO_PROMPTS
+
+        # Predefined analysis buttons
+        st.subheader("Quick Analysis Options")
+        cols = st.columns(len(prompts))
+        for i, (action, prompt) in enumerate(prompts.items()):
+            if cols[i].button(action):
+                with st.spinner(f"Analyzing with {action}..."):
+                    if 'frames' in st.session_state and uploaded_file.type.startswith('video/'):
+                        responses = []
+                        for j, frame in enumerate(st.session_state.frames):
+                            response = get_gemini_response(st.session_state.chat, f"{prompt} (Frame {j+1})", frame)
+                            responses.append(f"Frame {j+1}: {response}")
+                        response = "\n\n".join(responses)
+                    else:
+                        response = get_gemini_response(st.session_state.chat, prompt, st.session_state.processed_file)
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    st.chat_message("assistant").markdown(response)
 
     # Display chat history
     display_chat_history(st.session_state.get('messages', []))
