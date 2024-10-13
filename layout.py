@@ -50,7 +50,7 @@ def render_sidebar():
 
             safety_settings = []
             for category_name, category in safety_categories:
-                setting = st.selectbox(category_name, list(safety_options.keys()), index=1)
+                setting = st.selectbox(category_name, list(safety_options.keys()), index=0)
                 safety_settings.append({
                     "category": category,
                     "threshold": safety_options[setting]
@@ -92,21 +92,10 @@ def render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_confi
         try:
             genai.configure(api_key=api_key)
             
-            # Set default safety settings to BLOCK_NONE
-            default_safety_settings = [
-                {"category": category, "threshold": HarmBlockThreshold.BLOCK_NONE}
-                for category in [
-                    HarmCategory.HARM_CATEGORY_HARASSMENT,
-                    HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT
-                ]
-            ]
-            
             model = genai.GenerativeModel(
                 MODEL_OPTIONS[selected_model],
                 generation_config=generation_config,
-                safety_settings=default_safety_settings
+                safety_settings=safety_settings if safety_settings else None
             )
             if 'chat' not in st.session_state or st.session_state.current_model != MODEL_OPTIONS[selected_model]:
                 st.session_state.current_model = MODEL_OPTIONS[selected_model]
