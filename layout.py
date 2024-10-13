@@ -69,13 +69,14 @@ def render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_confi
 
     # Quick Analysis Options
     if 'processed_file' in st.session_state and 'prompts' in st.session_state:
-        col1, *cols = st.columns([2] + [1] * len(st.session_state.prompts))
-        with col1:
-            st.markdown("**Quick Analysis Options:**", unsafe_allow_html=True)
+        st.markdown("**Quick Analysis Options:**", unsafe_allow_html=True)
+        cols = st.columns(len(st.session_state.prompts))
         for option, col in zip(st.session_state.prompts.keys(), cols):
             with col:
-                if st.button(option):
+                if st.button(option, key=f"button_{option}", use_container_width=True):
                     st.session_state.current_analysis = {"action": option, "prompt": st.session_state.prompts[option]}
+                    # Add the button press to the messages
+                    st.session_state.messages.append({"role": "user", "content": f"[{option}] {st.session_state.prompts[option]}"})
                     st.rerun()
 
     # Chat input
