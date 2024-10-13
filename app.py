@@ -20,16 +20,19 @@ left_column, right_column = st.columns([2, 3])
 with left_column:
     st.title("🤖 Chat with Gemini")
 
-    # Sidebar for configuration
-    with st.expander("Configuration"):
-        api_key = st.text_input("Enter your Gemini API Key", type="password")
-        selected_model = st.selectbox("Select Gemini Model", list(MODEL_OPTIONS.keys()))
-        
-        with st.expander("Advanced Settings"):
-            temperature = st.slider("Temperature", 0.0, 1.0, DEFAULT_GENERATION_CONFIG["temperature"])
-            top_p = st.slider("Top P", 0.0, 1.0, DEFAULT_GENERATION_CONFIG["top_p"])
-            top_k = st.slider("Top K", 1, 100, DEFAULT_GENERATION_CONFIG["top_k"])
-            max_output_tokens = st.slider("Max Output Tokens", 1, 8192, DEFAULT_GENERATION_CONFIG["max_output_tokens"])
+    # Configuration
+    st.subheader("Configuration")
+    api_key = st.text_input("Enter your Gemini API Key", type="password")
+    selected_model = st.selectbox("Select Gemini Model", list(MODEL_OPTIONS.keys()))
+    
+    show_advanced = st.checkbox("Show Advanced Settings")
+    
+    if show_advanced:
+        st.subheader("Advanced Settings")
+        temperature = st.slider("Temperature", 0.0, 1.0, DEFAULT_GENERATION_CONFIG["temperature"])
+        top_p = st.slider("Top P", 0.0, 1.0, DEFAULT_GENERATION_CONFIG["top_p"])
+        top_k = st.slider("Top K", 1, 100, DEFAULT_GENERATION_CONFIG["top_k"])
+        max_output_tokens = st.slider("Max Output Tokens", 1, 8192, DEFAULT_GENERATION_CONFIG["max_output_tokens"])
 
         generation_config = {
             "temperature": temperature,
@@ -38,9 +41,9 @@ with left_column:
             "max_output_tokens": max_output_tokens,
         }
 
-        if st.button("Clear Chat"):
-            clear_chat_history()
-            st.rerun()
+    if st.button("Clear Chat"):
+        clear_chat_history()
+        st.rerun()
 
     if api_key:
         try:
