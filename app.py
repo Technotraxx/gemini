@@ -123,4 +123,4 @@ with right_column:
 
 # Ensure the chat scrolls to the bottom
 if st.session_state.get('messages'):
-    st.experimental_rerun()
+    st.rerun()
