@@ -8,6 +8,7 @@ import os
 import time
 from moviepy.editor import VideoFileClip
 from google.api_core import exceptions
+import re
 
 def upload_and_process_file(uploaded_file):
     if uploaded_file is not None:
@@ -55,22 +56,19 @@ def get_gemini_response(chat, user_input, file=None, safety_settings=None):
         else:
             response = chat.send_message(user_input)
         return response.text
-    except exceptions.GoogleAPICallError as e:
+    except Exception as e:
         error_message = str(e)
         if "finish_reason: SAFETY" in error_message:
-            # Extract safety categories that triggered the filter
-            triggered_categories = [
-                category for category in ["HARM_CATEGORY_SEXUALLY_EXPLICIT", 
-                                          "HARM_CATEGORY_HATE_SPEECH", 
-                                          "HARM_CATEGORY_HARASSMENT", 
-                                          "HARM_CATEGORY_DANGEROUS_CONTENT"]
-                if category in error_message
-            ]
+            # Extract safety categories and their probabilities
+            safety_info = re.findall(r"category: (\w+) probability: (\w+)", error_message)
             
             user_message = ("The response was blocked due to safety concerns. "
-                            "The content may have been flagged for the following reasons:\n")
-            for category in triggered_categories:
-                user_message += f"- {category.replace('HARM_CATEGORY_', '').replace('_', ' ').title()}\n"
+                            "The content was flagged for the following reasons:\n")
+            for category, probability in safety_info:
+                if probability != "NEGLIGIBLE":
+                    category_name = category.replace('HARM_CATEGORY_', '').replace('_', ' ').title()
+                    user_message += f"- {category_name} (Probability: {probability.lower()})\n"
+            
             user_message += ("\nPlease try rephrasing your request or adjusting the safety settings "
                              "if you believe this is an error.")
             
@@ -79,9 +77,6 @@ def get_gemini_response(chat, user_input, file=None, safety_settings=None):
         else:
             st.error(f"Error getting Gemini response: {error_message}")
             return None
-    except Exception as e:
-        st.error(f"Unexpected error: {str(e)}")
-        return None
 
 def manage_chat_session(model, history):
     if not history or history[-1]['role'] == 'user':
