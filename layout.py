@@ -73,7 +73,7 @@ def render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_confi
         st.rerun()
 
     # Quick Analysis Options
-    if 'processed_file' in st.session_state:
+    if 'processed_file' in st.session_state and 'prompts' in st.session_state:
         col1, *cols = st.columns([2] + [1] * len(st.session_state.prompts))
         with col1:
             st.markdown("**Quick Analysis Options:**", unsafe_allow_html=True)
