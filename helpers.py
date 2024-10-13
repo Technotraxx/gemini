@@ -45,8 +45,10 @@ def wait_for_file_active(file):
     if file.state.name != "ACTIVE":
         raise Exception(f"File {file.name} failed to process")
 
-def get_gemini_response(chat, user_input, file=None):
+def get_gemini_response(chat, user_input, file=None, safety_settings=None):
     try:
+        if safety_settings:
+            chat.model.safety_settings = safety_settings
         if file:
             response = chat.send_message([user_input, file])
         else:
