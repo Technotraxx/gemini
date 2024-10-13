@@ -33,6 +33,8 @@ if 'messages' not in st.session_state:
     st.session_state.messages = []
 if 'current_model' not in st.session_state:
     st.session_state.current_model = None
+if 'prompts' not in st.session_state:
+    st.session_state.prompts = {}    
 
 # Render sidebar
 api_key, selected_model, generation_config, safety_settings = render_sidebar()
@@ -47,13 +49,13 @@ with left_column:
         st.session_state.processed_file = upload_and_process_file(uploaded_file)
         if uploaded_file.type.startswith('image/'):
             st.image(st.session_state.processed_file, caption='Uploaded Image', use_column_width=True)
-            prompts = IMAGE_PROMPTS
+            st.session_state.prompts = IMAGE_PROMPTS
         elif uploaded_file.type.startswith('video/'):
             st.video(uploaded_file, start_time=0)
-            prompts = VIDEO_PROMPTS
+            st.session_state.prompts = VIDEO_PROMPTS
         elif uploaded_file.type.startswith('audio/'):
             st.audio(uploaded_file)
-            prompts = AUDIO_PROMPTS
+            st.session_state.prompts = AUDIO_PROMPTS
 
 with right_column:
     render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_config, safety_settings)
