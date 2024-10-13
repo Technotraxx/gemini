@@ -114,9 +114,6 @@ with right_column:
                     st.session_state.current_analysis = {"action": option, "prompt": st.session_state.prompts[option]}
                     st.rerun()
 
-    # Display chat history before processing new inputs
-    display_chat_history(st.session_state.get('messages', []))
-
     # Process current analysis or input
     if 'current_analysis' in st.session_state:
         user_message = f"[{st.session_state.current_analysis['action']}] {st.session_state.current_analysis['prompt']}"
