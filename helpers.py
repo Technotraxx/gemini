@@ -6,14 +6,14 @@ import google.generativeai as genai
 import tempfile
 import os
 import time
-import cv2
+from moviepy.editor import VideoFileClip
 
-def upload_and_process_file(uploaded_file, preview_width=None):
+def upload_and_process_file(uploaded_file):
     if uploaded_file is not None:
         file_extension = mimetypes.guess_extension(uploaded_file.type)
         try:
             if uploaded_file.type.startswith('image/'):
-                return process_image(uploaded_file, preview_width)
+                return process_image(uploaded_file)
             elif uploaded_file.type.startswith('video/') or uploaded_file.type.startswith('audio/'):
                 return upload_to_gemini(uploaded_file)
             else:
@@ -22,41 +22,9 @@ def upload_and_process_file(uploaded_file, preview_width=None):
             st.error(f"Error processing file: {str(e)}")
     return None
 
-def process_image(uploaded_file, preview_width=None):
+def process_image(uploaded_file):
     image = Image.open(uploaded_file)
-    if preview_width:
-        width, height = image.size
-        new_height = int(height * (preview_width / width))
-        image.thumbnail((preview_width, new_height))
     return image
-
-def extract_video_frames(uploaded_file, interval):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
-        temp_file.write(uploaded_file.getvalue())
-        temp_path = temp_file.name
-
-    try:
-        cap = cv2.VideoCapture(temp_path)
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        frames = []
-        frame_count = 0
-
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            if frame_count % int(fps * interval) == 0:
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                pil_image = Image.fromarray(rgb_frame)
-                frames.append(pil_image)
-            
-            frame_count += 1
-
-        cap.release()
-        return frames
-    finally:
-        os.unlink(temp_path)
 
 def upload_to_gemini(uploaded_file):
     with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
@@ -112,3 +80,21 @@ def init_chat_session(model_name):
 def clear_chat_history():
     st.session_state.messages = []
     st.session_state.chat = init_chat_session(st.session_state.current_model)
+
+def extract_video_frames(uploaded_file, interval):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
+        temp_file.write(uploaded_file.getvalue())
+        temp_path = temp_file.name
+
+    try:
+        video = VideoFileClip(temp_path)
+        duration = video.duration
+        frames = []
+        for t in range(0, int(duration), interval):
+            frame = video.get_frame(t)
+            pil_image = Image.fromarray(frame)
+            frames.append(pil_image)
+        video.close()
+        return frames
+    finally:
+        os.unlink(temp_path)
