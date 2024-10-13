@@ -21,16 +21,6 @@ from settings import (
 )
 
 # ----------------------------
-# 1. Streamlit Version Check
-# ----------------------------
-required_version = "1.21.0"
-current_version = pkg_resources.get_distribution("streamlit").version
-
-if pkg_resources.parse_version(current_version) < pkg_resources.parse_version(required_version):
-    st.error(f"Please update Streamlit to version {required_version} or higher to use chat features.")
-    st.stop()
-
-# ----------------------------
 # 2. Configure Streamlit Page
 # ----------------------------
 st.set_page_config(**PAGE_CONFIG, layout="wide")
