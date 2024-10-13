@@ -1,5 +1,6 @@
 import streamlit as st
-import pkg_resources
+from importlib.metadata import version, PackageNotFoundError
+from packaging import version as pkg_version  # To compare versions
 import google.generativeai as genai
 from helpers import (
     upload_and_process_file, 
@@ -19,6 +20,23 @@ from settings import (
     PAGE_CONFIG, 
     ACCEPTED_FILE_TYPES
 )
+
+import warnings
+# Suppress SyntaxWarnings from moviepy (temporary workaround)
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="moviepy")
+
+# ----------------------------
+# 1. Streamlit Version Check
+# ----------------------------
+required_version = "1.21.0"
+try:
+    current_version = version("streamlit")
+    if pkg_version.parse(current_version) < pkg_version.parse(required_version):
+        st.error(f"Please update Streamlit to version {required_version} or higher to use chat features.")
+        st.stop()
+except PackageNotFoundError:
+    st.error("Streamlit is not installed.")
+    st.stop()
 
 # ----------------------------
 # 2. Configure Streamlit Page
@@ -62,10 +80,10 @@ with st.sidebar:
     
     if show_advanced:
         st.subheader("Advanced Settings")
-        temperature = st.slider("Temperature", 0.0, 1.0, DEFAULT_GENERATION_CONFIG["temperature"])
-        top_p = st.slider("Top P", 0.0, 1.0, DEFAULT_GENERATION_CONFIG["top_p"])
-        top_k = st.slider("Top K", 1, 100, DEFAULT_GENERATION_CONFIG["top_k"])
-        max_output_tokens = st.slider("Max Output Tokens", 1, 8192, DEFAULT_GENERATION_CONFIG["max_output_tokens"])
+        temperature = st.slider("Temperature", 0.0, 1.0, st.session_state.generation_config["temperature"])
+        top_p = st.slider("Top P", 0.0, 1.0, st.session_state.generation_config["top_p"])
+        top_k = st.slider("Top K", 1, 100, st.session_state.generation_config["top_k"])
+        max_output_tokens = st.slider("Max Output Tokens", 1, 8192, st.session_state.generation_config["max_output_tokens"])
 
         generation_config = {
             "temperature": temperature,
@@ -83,10 +101,10 @@ with st.sidebar:
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel(MODEL_OPTIONS[selected_model])
             
-            # Initialize or switch chat session if model changes
-            if (st.session_state.chat is None) or (st.session_state.current_model != MODEL_OPTIONS[selected_model]):
+            # Initialize or switch chat session if model or generation config changes
+            if (st.session_state.chat is None) or (st.session_state.current_model != MODEL_OPTIONS[selected_model]) or (st.session_state.generation_config != DEFAULT_GENERATION_CONFIG):
                 st.session_state.current_model = MODEL_OPTIONS[selected_model]
-                st.session_state.chat = model.start_chat(history=[])
+                st.session_state.chat = init_chat_session(st.session_state.current_model, st.session_state.generation_config)
                 st.session_state.messages = []
             
             st.success("API Key configured successfully!")
@@ -209,8 +227,7 @@ with right_column:
                         response = get_gemini_response(
                             st.session_state.chat, 
                             frame_prompt, 
-                            frame,
-                            st.session_state.generation_config
+                            frame
                         )
                         responses.append(f"**Frame {j+1}:** {response}")
                     response_combined = "\n\n".join(responses)
@@ -218,12 +235,12 @@ with right_column:
                     response_combined = get_gemini_response(
                         st.session_state.chat, 
                         prompt, 
-                        st.session_state.get('processed_file'),
-                        st.session_state.generation_config
+                        st.session_state.get('processed_file')
                     )
                 
-                st.session_state.messages.append({"role": "assistant", "content": response_combined})
-                st.chat_message("assistant").markdown(response_combined)
+                if response_combined:
+                    st.session_state.messages.append({"role": "assistant", "content": response_combined})
+                    st.chat_message("assistant").markdown(response_combined)
             except Exception as e:
                 st.error(f"Error during analysis: {str(e)}")
         
@@ -242,12 +259,26 @@ with right_column:
                 response = get_gemini_response(
                     st.session_state.chat, 
                     user_text, 
-                    user_media,
-                    st.session_state.generation_config
+                    user_media
                 )
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                st.chat_message("assistant").markdown(response)
+                if response:
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    st.chat_message("assistant").markdown(response)
             except Exception as e:
                 st.error(f"Error generating response: {str(e)}")
         
         st.session_state.current_input = None
+
+# ----------------------------
+# 6. Helper Function Definitions
+# ----------------------------
+# Note: Ensure that all helper functions in helpers.py are updated to handle the new parameters if necessary.
+# For example, get_gemini_response should no longer accept generation_config as it's now set during chat session initialization.
+
+# ----------------------------
+# 7. Additional Recommendations
+# ----------------------------
+# - **Logging**: For production, consider implementing logging to monitor application behavior and errors.
+# - **Caching**: Use Streamlit's caching mechanisms to cache expensive operations if applicable.
+# - **Security**: Ensure that uploaded files are securely handled and validated to prevent security vulnerabilities.
+# - **Performance**: Optimize media processing, especially for large video files, possibly by limiting the number of frames extracted or using asynchronous processing.
