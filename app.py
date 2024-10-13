@@ -74,17 +74,17 @@ with right_column:
                 response = "\n\n".join(responses)
             else:
                 response = get_gemini_response(st.session_state.chat, st.session_state.current_analysis['prompt'], st.session_state.get('processed_file'), safety_settings)
-            st.session_state.messages.append({"role": "assistant", "content": response})
+            st.session_state.messages.insert(0, {"role": "assistant", "content": response})
             st.chat_message("assistant").markdown(response)
         del st.session_state.current_analysis
         
     if 'current_input' in st.session_state:
-        st.session_state.messages.append({"role": "user", "content": st.session_state.current_input['text']})
+        st.session_state.messages.insert(0, {"role": "user", "content": st.session_state.current_input['text']})
         st.chat_message("user").markdown(st.session_state.current_input['text'])
         
         with st.spinner("Gemini is thinking..."):
             response = get_gemini_response(st.session_state.chat, st.session_state.current_input['text'], st.session_state.current_input['media'], safety_settings)
         
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.session_state.messages.insert(0, {"role": "assistant", "content": response})
         st.chat_message("assistant").markdown(response)
         del st.session_state.current_input
