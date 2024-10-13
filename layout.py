@@ -14,7 +14,7 @@ def horizontal_radio_buttons(options, key):
     cols = st.columns(len(options))
     for i, (option, col) in enumerate(zip(options, cols)):
         with col:
-            if st.button(option, key=f"{key}_{i}"):
+            if st.button(option, key=f"{key}_{i}", use_container_width=True):
                 return option
     return None
 
