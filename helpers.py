@@ -6,6 +6,7 @@ import google.generativeai as genai
 import tempfile
 import os
 import time
+from moviepy.editor import VideoFileClip
 
 def upload_and_process_file(uploaded_file):
     if uploaded_file is not None:
@@ -75,3 +76,25 @@ def init_chat_session(model_name):
     except Exception as e:
         st.error(f"Error initializing chat session: {str(e)}")
         return None
+
+def clear_chat_history():
+    st.session_state.messages = []
+    st.session_state.chat = init_chat_session(st.session_state.current_model)
+
+def extract_video_frames(uploaded_file, interval):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=mimetypes.guess_extension(uploaded_file.type)) as temp_file:
+        temp_file.write(uploaded_file.getvalue())
+        temp_path = temp_file.name
+
+    try:
+        video = VideoFileClip(temp_path)
+        duration = video.duration
+        frames = []
+        for t in range(0, int(duration), interval):
+            frame = video.get_frame(t)
+            pil_image = Image.fromarray(frame)
+            frames.append(pil_image)
+        video.close()
+        return frames
+    finally:
+        os.unlink(temp_path)
