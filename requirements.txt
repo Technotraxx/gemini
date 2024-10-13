@@ -6,3 +6,4 @@ soundfile
 matplotlib
 numpy
 python-dotenv
+packaging
