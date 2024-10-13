@@ -87,7 +87,7 @@ def manage_chat_session(model, history):
     return chat
 
 def display_chat_history(messages):
-    for message in reversed(messages):
+    for message in messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
