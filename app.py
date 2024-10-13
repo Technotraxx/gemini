@@ -91,11 +91,29 @@ with left_column:
                     st.rerun()
 
     # Chat input
-    user_input = st.text_input("Ask Gemini or enter a prompt...")
-    if user_input:
-        media = st.session_state.get('processed_file')
-        st.session_state.current_input = {"text": user_input, "media": media}
-        st.rerun()
+    if 'chat' in st.session_state:
+        user_input = st.chat_input("Ask Gemini or enter a prompt...")
+        if user_input:
+            media_options = ["No media"]
+            if 'processed_file' in st.session_state:
+                media_options.append("Uploaded file")
+            if 'frames' in st.session_state:
+                media_options.append("Extracted frame")
+            
+            media_option = st.radio("Include media with your message:", media_options)
+            
+            media = None
+            if media_option == "Uploaded file" and 'processed_file' in st.session_state:
+                media = st.session_state.processed_file
+            elif media_option == "Extracted frame" and 'frames' in st.session_state:
+                frame_index = st.selectbox("Select frame:", range(len(st.session_state.frames)))
+                media = st.session_state.frames[frame_index]
+
+            st.session_state.current_input = {"text": user_input, "media": media}
+            st.rerun()
+
+    else:
+        st.info("Enter your API Key in the sidebar to start chatting.")
 
 with right_column:
     st.subheader("Chat History and Responses")
