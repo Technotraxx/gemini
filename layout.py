@@ -24,14 +24,15 @@ def render_sidebar():
         api_key = st.text_input("Enter your Gemini API Key", type="password")
         selected_model = st.selectbox("Select Gemini Model", list(MODEL_OPTIONS.keys()))
         
-        show_advanced = st.checkbox("Show Advanced Settings")
+        generation_config = DEFAULT_GENERATION_CONFIG.copy()
+        safety_settings = None
         
-        if show_advanced:
-            st.subheader("Advanced Settings")
-            temperature = st.slider("Temperature", 0.0, 1.0, DEFAULT_GENERATION_CONFIG["temperature"])
-            top_p = st.slider("Top P", 0.0, 1.0, DEFAULT_GENERATION_CONFIG["top_p"])
-            top_k = st.slider("Top K", 1, 100, DEFAULT_GENERATION_CONFIG["top_k"])
-            max_output_tokens = st.slider("Max Output Tokens", 1, 8192, DEFAULT_GENERATION_CONFIG["max_output_tokens"])
+        with st.expander("Advanced Settings"):
+            st.subheader("Generation Settings")
+            generation_config["temperature"] = st.slider("Temperature", 0.0, 1.0, DEFAULT_GENERATION_CONFIG["temperature"])
+            generation_config["top_p"] = st.slider("Top P", 0.0, 1.0, DEFAULT_GENERATION_CONFIG["top_p"])
+            generation_config["top_k"] = st.slider("Top K", 1, 100, DEFAULT_GENERATION_CONFIG["top_k"])
+            generation_config["max_output_tokens"] = st.slider("Max Output Tokens", 1, 8192, DEFAULT_GENERATION_CONFIG["max_output_tokens"])
 
             st.subheader("Safety Settings")
             safety_options = {
@@ -55,16 +56,6 @@ def render_sidebar():
                     "category": category,
                     "threshold": safety_options[setting]
                 })
-
-            generation_config = {
-                "temperature": temperature,
-                "top_p": top_p,
-                "top_k": top_k,
-                "max_output_tokens": max_output_tokens,
-            }
-        else:
-            generation_config = DEFAULT_GENERATION_CONFIG
-            safety_settings = None
 
     return api_key, selected_model, generation_config, safety_settings
 
