@@ -14,10 +14,21 @@ from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, VI
 # Configure Streamlit page
 st.set_page_config(**PAGE_CONFIG, layout="wide")
 
+# Custom CSS to limit image size
+st.markdown("""
+    <style>
+    .uploaded-image {
+        max-width: 300px;
+        max-height: 300px;
+        width: auto;
+        height: auto;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # Sidebar configuration
 with st.sidebar:
     st.title("Configuration")
-    
     api_key = st.text_input("Enter your Gemini API Key", type="password")
     selected_model = st.selectbox("Select Gemini Model", list(MODEL_OPTIONS.keys()))
     
@@ -37,7 +48,6 @@ with st.sidebar:
             "max_output_tokens": max_output_tokens,
         }
     
-    # Info / alert box
     if api_key:
         try:
             genai.configure(api_key=api_key)
@@ -53,7 +63,7 @@ with st.sidebar:
         st.warning("Please enter your Gemini API Key to start chatting.")
 
 # Main content
-left_column, right_column = st.columns([1, 1])
+left_column, right_column = st.columns([2, 3])
 
 with left_column:
     st.title("🤖 Chat with Gemini")
@@ -62,36 +72,44 @@ with left_column:
         clear_chat_history()
         st.rerun()
 
-    # File upload
+    # Chat input and Quick Analysis Options (moved to the top)
     if 'chat' in st.session_state:
-        uploaded_file = st.file_uploader("Upload an image, video, or audio file (optional)", 
-                                         type=['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg'])
-        if uploaded_file:
-            st.session_state.processed_file = upload_and_process_file(uploaded_file)
-            if uploaded_file.type.startswith('image/'):
-                st.image(st.session_state.processed_file, caption='Uploaded Image', use_column_width=True)
+        user_input = st.chat_input("Ask Gemini or enter a prompt...")
+        
+        st.subheader("Quick Analysis Options")
+        if 'processed_file' in st.session_state:
+            file_type = st.session_state.processed_file.type if hasattr(st.session_state.processed_file, 'type') else None
+            if file_type and file_type.startswith('image/'):
                 prompts = IMAGE_PROMPTS
-            elif uploaded_file.type.startswith('video/'):
-                st.video(uploaded_file, start_time=0)
+            elif file_type and file_type.startswith('video/'):
                 prompts = VIDEO_PROMPTS
-                if st.checkbox("Extract frames for analysis"):
-                    frame_interval = st.slider("Select frame interval (seconds)", 1, 60, 10)
-                    st.session_state.frames = extract_video_frames(uploaded_file, frame_interval)
-                    st.write(f"Extracted {len(st.session_state.frames)} frames")
-                    st.image(st.session_state.frames[0], caption="First extracted frame", use_column_width=True)
-            elif uploaded_file.type.startswith('audio/'):
-                st.audio(uploaded_file)
+            elif file_type and file_type.startswith('audio/'):
                 prompts = AUDIO_PROMPTS
+            else:
+                prompts = {}
 
-            # Predefined analysis buttons
-            st.subheader("Quick Analysis Options")
             for action, prompt in prompts.items():
                 if st.button(action):
                     st.session_state.current_analysis = {"action": action, "prompt": prompt}
                     st.rerun()
 
-        # Chat input
-        user_input = st.chat_input("Ask Gemini or enter a prompt...")
+        # File upload (moved below chat input and analysis options)
+        uploaded_file = st.file_uploader("Upload an image, video, or audio file (optional)", 
+                                         type=['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg'])
+        if uploaded_file:
+            st.session_state.processed_file = upload_and_process_file(uploaded_file)
+            if uploaded_file.type.startswith('image/'):
+                st.image(st.session_state.processed_file, caption='Uploaded Image', use_column_width=False, width=300)
+            elif uploaded_file.type.startswith('video/'):
+                st.video(uploaded_file, start_time=0)
+                if st.checkbox("Extract frames for analysis"):
+                    frame_interval = st.slider("Select frame interval (seconds)", 1, 60, 10)
+                    st.session_state.frames = extract_video_frames(uploaded_file, frame_interval)
+                    st.write(f"Extracted {len(st.session_state.frames)} frames")
+                    st.image(st.session_state.frames[0], caption="First extracted frame", use_column_width=False, width=300)
+            elif uploaded_file.type.startswith('audio/'):
+                st.audio(uploaded_file)
+
         if user_input:
             media_options = ["No media"]
             if 'processed_file' in st.session_state:
@@ -123,7 +141,7 @@ with right_column:
     # Process current analysis or input
     if 'current_analysis' in st.session_state:
         with st.spinner(f"Analyzing with {st.session_state.current_analysis['action']}..."):
-            if 'frames' in st.session_state and uploaded_file.type.startswith('video/'):
+            if 'frames' in st.session_state and st.session_state.processed_file.type.startswith('video/'):
                 responses = []
                 for j, frame in enumerate(st.session_state.frames):
                     response = get_gemini_response(st.session_state.chat, f"{st.session_state.current_analysis['prompt']} (Frame {j+1})", frame)
