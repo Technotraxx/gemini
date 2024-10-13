@@ -7,6 +7,7 @@ import tempfile
 import os
 import time
 from moviepy.editor import VideoFileClip
+from google.api_core import exceptions
 
 def upload_and_process_file(uploaded_file):
     if uploaded_file is not None:
@@ -54,8 +55,18 @@ def get_gemini_response(chat, user_input, file=None, safety_settings=None):
         else:
             response = chat.send_message(user_input)
         return response.text
+    except exceptions.GoogleAPICallError as e:
+        if "finish_reason: SAFETY" in str(e):
+            error_message = ("The image was blocked due to safety concerns. "
+                             "This can happen if the image contains sensitive or explicit content. "
+                             "Please try a different image or adjust the safety settings.")
+            st.warning(error_message)
+            return error_message
+        else:
+            st.error(f"Error getting Gemini response: {str(e)}")
+            return None
     except Exception as e:
-        st.error(f"Error getting Gemini response: {str(e)}")
+        st.error(f"Unexpected error: {str(e)}")
         return None
 
 def manage_chat_session(model, history):
