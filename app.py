@@ -14,6 +14,12 @@ from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, VI
 # Configure Streamlit page
 st.set_page_config(**PAGE_CONFIG, layout="wide")
 
+# Initialize session state
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
+if 'current_model' not in st.session_state:
+    st.session_state.current_model = None
+
 # Sidebar configuration
 with st.sidebar:
     st.title("Configuration")
@@ -86,7 +92,7 @@ with left_column:
     # Chat input
     user_input = st.text_input("Ask Gemini or enter a prompt...")
     if user_input:
-        media = st.session_state.processed_file if 'processed_file' in st.session_state else None
+        media = st.session_state.get('processed_file')
         st.session_state.current_input = {"text": user_input, "media": media}
 
 with right_column:
@@ -98,14 +104,14 @@ with right_column:
     # Process current analysis or input
     if 'current_analysis' in st.session_state:
         with st.spinner(f"Analyzing with {st.session_state.current_analysis['action']}..."):
-            if 'frames' in st.session_state and st.session_state.processed_file.type.startswith('video/'):
+            if 'frames' in st.session_state and st.session_state.get('processed_file') and st.session_state.processed_file.type.startswith('video/'):
                 responses = []
                 for j, frame in enumerate(st.session_state.frames):
                     response = get_gemini_response(st.session_state.chat, f"{st.session_state.current_analysis['prompt']} (Frame {j+1})", frame)
                     responses.append(f"Frame {j+1}: {response}")
                 response = "\n\n".join(responses)
             else:
-                response = get_gemini_response(st.session_state.chat, st.session_state.current_analysis['prompt'], st.session_state.processed_file)
+                response = get_gemini_response(st.session_state.chat, st.session_state.current_analysis['prompt'], st.session_state.get('processed_file'))
             st.session_state.messages.append({"role": "assistant", "content": response})
             st.chat_message("assistant").markdown(response)
         del st.session_state.current_analysis
@@ -121,6 +127,4 @@ with right_column:
         st.chat_message("assistant").markdown(response)
         del st.session_state.current_input
 
-# Ensure the chat scrolls to the bottom
-if st.session_state.get('messages'):
-    st.rerun()
+# No st.experimental_rerun() here
