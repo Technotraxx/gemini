@@ -1,3 +1,6 @@
+# File upload settings
+ACCEPTED_FILE_TYPES = ['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg']
+
 # Gemini model options
 MODEL_OPTIONS = {
     "Gemini 1.5 Flash": "gemini-1.5-flash",
