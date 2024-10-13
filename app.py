@@ -60,28 +60,28 @@ with left_column:
 with right_column:
     render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_config, safety_settings)
 
-# Process current analysis or input
-if 'current_analysis' in st.session_state:
-    with st.spinner(f"Analyzing with {st.session_state.current_analysis['action']}..."):
-        if 'frames' in st.session_state and st.session_state.get('processed_file') and st.session_state.processed_file.type.startswith('video/'):
-            responses = []
-            for j, frame in enumerate(st.session_state.frames):
-                response = get_gemini_response(st.session_state.chat, f"{st.session_state.current_analysis['prompt']} (Frame {j+1})", frame)
-                responses.append(f"Frame {j+1}: {response}")
-            response = "\n\n".join(responses)
-        else:
-            response = get_gemini_response(st.session_state.chat, st.session_state.current_analysis['prompt'], st.session_state.get('processed_file'))
+    # Process current analysis or input
+    if 'current_analysis' in st.session_state:
+        with st.spinner(f"Analyzing with {st.session_state.current_analysis['action']}..."):
+            if 'frames' in st.session_state and st.session_state.get('processed_file') and st.session_state.processed_file.type.startswith('video/'):
+                responses = []
+                for j, frame in enumerate(st.session_state.frames):
+                    response = get_gemini_response(st.session_state.chat, f"{st.session_state.current_analysis['prompt']} (Frame {j+1})", frame)
+                    responses.append(f"Frame {j+1}: {response}")
+                response = "\n\n".join(responses)
+            else:
+                response = get_gemini_response(st.session_state.chat, st.session_state.current_analysis['prompt'], st.session_state.get('processed_file'))
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            st.chat_message("assistant").markdown(response)
+        del st.session_state.current_analysis
+
+    if 'current_input' in st.session_state:
+        st.session_state.messages.append({"role": "user", "content": st.session_state.current_input['text']})
+        st.chat_message("user").markdown(st.session_state.current_input['text'])
+        
+        with st.spinner("Gemini is thinking..."):
+            response = get_gemini_response(st.session_state.chat, st.session_state.current_input['text'], st.session_state.current_input['media'])
+        
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.chat_message("assistant").markdown(response)
-    del st.session_state.current_analysis
-
-if 'current_input' in st.session_state:
-    st.session_state.messages.append({"role": "user", "content": st.session_state.current_input['text']})
-    st.chat_message("user").markdown(st.session_state.current_input['text'])
-    
-    with st.spinner("Gemini is thinking..."):
-        response = get_gemini_response(st.session_state.chat, st.session_state.current_input['text'], st.session_state.current_input['media'])
-    
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    st.chat_message("assistant").markdown(response)
-    del st.session_state.current_input
+        del st.session_state.current_input
