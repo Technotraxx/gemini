@@ -14,14 +14,10 @@ from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, VI
 # Configure Streamlit page
 st.set_page_config(**PAGE_CONFIG, layout="wide")
 
-# Create two columns for the layout
-left_column, right_column = st.columns([2, 3])
-
-with left_column:
-    st.title("🤖 Chat with Gemini")
-
-    # Configuration
-    st.subheader("Configuration")
+# Sidebar configuration
+with st.sidebar:
+    st.title("Configuration")
+    
     api_key = st.text_input("Enter your Gemini API Key", type="password")
     selected_model = st.selectbox("Select Gemini Model", list(MODEL_OPTIONS.keys()))
     
@@ -40,11 +36,8 @@ with left_column:
             "top_k": top_k,
             "max_output_tokens": max_output_tokens,
         }
-
-    if st.button("Clear Chat"):
-        clear_chat_history()
-        st.rerun()
-
+    
+    # Info / alert box
     if api_key:
         try:
             genai.configure(api_key=api_key)
@@ -58,6 +51,16 @@ with left_column:
             st.error(f"Error configuring API Key: {str(e)}")
     else:
         st.warning("Please enter your Gemini API Key to start chatting.")
+
+# Main content
+left_column, right_column = st.columns([1, 1])
+
+with left_column:
+    st.title("🤖 Chat with Gemini")
+
+    if st.button("Clear Chat"):
+        clear_chat_history()
+        st.rerun()
 
     # File upload
     if 'chat' in st.session_state:
@@ -87,7 +90,7 @@ with left_column:
                     st.session_state.current_analysis = {"action": action, "prompt": prompt}
                     st.rerun()
 
-        # Streamlined chat input and media selection
+        # Chat input
         user_input = st.chat_input("Ask Gemini or enter a prompt...")
         if user_input:
             media_options = ["No media"]
