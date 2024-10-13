@@ -74,8 +74,10 @@ with left_column:
         elif uploaded_file.type.startswith('audio/'):
             st.audio(uploaded_file)
             prompts = AUDIO_PROMPTS
-        
-        # Horizontal Quick Analysis Options
+
+with right_column:
+    # Quick Analysis Options
+    if 'processed_file' in st.session_state:
         st.subheader("Quick Analysis Options")
         selected_action = horizontal_radio_buttons(prompts.keys(), "analysis_options")
         if selected_action:
@@ -103,11 +105,9 @@ with left_column:
 
             st.session_state.current_input = {"text": user_input, "media": media}
             st.rerun()
-
     else:
         st.info("Enter your API Key in the sidebar to start chatting.")
 
-with right_column:
     st.subheader("Chat History and Responses")
     
     # Clear chat button as an icon
