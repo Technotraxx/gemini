@@ -77,9 +77,16 @@ with left_column:
             prompts = AUDIO_PROMPTS
 
 with right_column:
+    st.subheader("Chat History and Responses")
+    
+    # Clear chat button as an icon
+    if st.button("🗑️", help="Clear Chat"):
+        clear_chat_history()
+        st.rerun()
+
     # Quick Analysis Options
     if 'processed_file' in st.session_state:
-        st.subheader("Quick Analysis Options")
+        st.markdown("**Quick Analysis Options:**", unsafe_allow_html=True)
         selected_action = horizontal_radio_buttons(prompts.keys(), "analysis_options")
         if selected_action:
             st.session_state.current_analysis = {"action": selected_action, "prompt": prompts[selected_action]}
@@ -108,13 +115,6 @@ with right_column:
             st.rerun()
     else:
         st.info("Enter your API Key in the sidebar to start chatting.")
-
-    st.subheader("Chat History and Responses")
-    
-    # Clear chat button as an icon
-    if st.button("🗑️", help="Clear Chat"):
-        clear_chat_history()
-        st.rerun()
     
     # Display chat history
     display_chat_history(st.session_state.get('messages', []))
