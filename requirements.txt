@@ -5,3 +5,4 @@ moviepy
 soundfile
 matplotlib
 numpy
+opencv-python
