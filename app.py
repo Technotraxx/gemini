@@ -10,7 +10,6 @@ from helpers import (
     extract_video_frames
 )
 from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, VIDEO_PROMPTS, AUDIO_PROMPTS, PAGE_CONFIG, ACCEPTED_FILE_TYPES
-from layout import compact_file_uploader, horizontal_radio_buttons, floating_chat_input, card_container
 
 # Configure Streamlit page
 st.set_page_config(**PAGE_CONFIG, layout="wide")
@@ -61,8 +60,9 @@ with left_column:
         clear_chat_history()
         st.rerun()
 
-    # Compact file uploader
-    uploaded_file = compact_file_uploader("Upload file", ACCEPTED_FILE_TYPES)
+    # File upload
+    uploaded_file = st.file_uploader("Upload an image, video, or audio file (optional)", 
+                                     type=ACCEPTED_FILE_TYPES)
     if uploaded_file:
         st.session_state.processed_file = upload_and_process_file(uploaded_file)
         if uploaded_file.type.startswith('image/'):
@@ -77,15 +77,17 @@ with left_column:
         
         # Horizontal Quick Analysis Options
         st.subheader("Quick Analysis Options")
-        selected_analysis = horizontal_radio_buttons(list(prompts.keys()), "analysis")
-        if selected_analysis:
-            st.session_state.current_analysis = {"action": selected_analysis, "prompt": prompts[selected_analysis]}
-            st.rerun()
+        cols = st.columns(len(prompts))
+        for i, (action, prompt) in enumerate(prompts.items()):
+            with cols[i]:
+                if st.button(action):
+                    st.session_state.current_analysis = {"action": action, "prompt": prompt}
 
-    # Card-based layout for chat messages
-    if 'messages' in st.session_state:
-        for message in st.session_state.messages:
-            card_container(message['role'].capitalize(), message['content'])
+    # Chat input
+    user_input = st.text_input("Ask Gemini or enter a prompt...")
+    if user_input:
+        media = st.session_state.processed_file if 'processed_file' in st.session_state else None
+        st.session_state.current_input = {"text": user_input, "media": media}
 
 with right_column:
     st.subheader("Chat History and Responses")
@@ -108,13 +110,6 @@ with right_column:
             st.chat_message("assistant").markdown(response)
         del st.session_state.current_analysis
 
-    # Floating chat input
-    user_input = floating_chat_input()
-    if user_input:
-        media = st.session_state.processed_file if 'processed_file' in st.session_state else None
-        st.session_state.current_input = {"text": user_input, "media": media}
-        st.rerun()
-
     if 'current_input' in st.session_state:
         st.session_state.messages.append({"role": "user", "content": st.session_state.current_input['text']})
         st.chat_message("user").markdown(st.session_state.current_input['text'])
@@ -125,3 +120,7 @@ with right_column:
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.chat_message("assistant").markdown(response)
         del st.session_state.current_input
+
+# Ensure the chat scrolls to the bottom
+if st.session_state.get('messages'):
+    st.experimental_rerun()
