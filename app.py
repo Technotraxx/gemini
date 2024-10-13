@@ -20,14 +20,6 @@ if 'messages' not in st.session_state:
 if 'current_model' not in st.session_state:
     st.session_state.current_model = None
 
-# Callback function for chat input
-def on_input_change():
-    user_input = st.session_state.user_input
-    if user_input:
-        media = st.session_state.get('processed_file')
-        st.session_state.current_input = {"text": user_input, "media": media}
-        st.session_state.user_input = ""  # Clear the input after sending
-
 # Sidebar configuration
 with st.sidebar:
     st.title("Configuration")
@@ -98,7 +90,13 @@ with left_column:
                     st.session_state.current_analysis = {"action": action, "prompt": prompt}
 
     # Chat input
-    st.text_input("Ask Gemini or enter a prompt...", key="user_input", on_change=on_input_change)
+    with st.form(key="chat_form"):
+        user_input = st.text_input("Ask Gemini or enter a prompt...", key="user_input")
+        submit_button = st.form_submit_button("Send")
+
+    if submit_button and user_input:
+        media = st.session_state.get('processed_file')
+        st.session_state.current_input = {"text": user_input, "media": media}
 
 with right_column:
     st.subheader("Chat History and Responses")
@@ -131,3 +129,7 @@ with right_column:
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.chat_message("assistant").markdown(response)
         del st.session_state.current_input
+
+# Force a rerun to clear the form
+if submit_button:
+    st.rerun()
