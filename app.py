@@ -58,12 +58,31 @@ with left_column:
             st.session_state.prompts = AUDIO_PROMPTS
 
 with right_column:
-    render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_config, safety_settings if safety_settings else None)
+    st.subheader("Chat History and Responses")
+    
+    # Clear chat button as an icon
+    if st.button("🗑️", help="Clear Chat"):
+        clear_chat_history()
+        st.rerun()
 
-   # Process current analysis or input
+    # Quick Analysis Options
+    if 'processed_file' in st.session_state and 'prompts' in st.session_state:
+        st.markdown("**Quick Analysis Options:**", unsafe_allow_html=True)
+        cols = st.columns(len(st.session_state.prompts))
+        for option, col in zip(st.session_state.prompts.keys(), cols):
+            with col:
+                if st.button(option, key=f"button_{option}", use_container_width=True):
+                    st.session_state.current_analysis = {"action": option, "prompt": st.session_state.prompts[option]}
+                    st.rerun()
+
+    # Display chat history before processing new inputs
+    display_chat_history(st.session_state.get('messages', []))
+
+    # Process current analysis or input
     if 'current_analysis' in st.session_state:
-        # Display the user's action in the chat
-        st.chat_message("user").markdown(f"[{st.session_state.current_analysis['action']}] {st.session_state.current_analysis['prompt']}")
+        user_message = f"[{st.session_state.current_analysis['action']}] {st.session_state.current_analysis['prompt']}"
+        st.session_state.messages.insert(0, {"role": "user", "content": user_message})
+        st.chat_message("user").markdown(user_message)
         
         with st.spinner(f"Analyzing with {st.session_state.current_analysis['action']}..."):
             if 'frames' in st.session_state and st.session_state.get('processed_file') and st.session_state.processed_file.type.startswith('video/'):
@@ -77,6 +96,7 @@ with right_column:
             st.session_state.messages.insert(0, {"role": "assistant", "content": response})
             st.chat_message("assistant").markdown(response)
         del st.session_state.current_analysis
+        st.rerun()
         
     if 'current_input' in st.session_state:
         st.session_state.messages.insert(0, {"role": "user", "content": st.session_state.current_input['text']})
@@ -88,3 +108,43 @@ with right_column:
         st.session_state.messages.insert(0, {"role": "assistant", "content": response})
         st.chat_message("assistant").markdown(response)
         del st.session_state.current_input
+        st.rerun()
+
+    # Chat input (move this to the bottom)
+    if api_key:
+        try:
+            genai.configure(api_key=api_key)
+            
+            model = genai.GenerativeModel(
+                MODEL_OPTIONS[selected_model],
+                generation_config=generation_config,
+                safety_settings=safety_settings if safety_settings else None
+            )
+            if 'chat' not in st.session_state or st.session_state.current_model != MODEL_OPTIONS[selected_model]:
+                st.session_state.current_model = MODEL_OPTIONS[selected_model]
+                st.session_state.chat = model.start_chat(history=[])
+                st.session_state.messages = []
+            
+            user_input = st.chat_input("Ask Gemini or enter a prompt...")
+            if user_input:
+                media_options = ["No media"]
+                if 'processed_file' in st.session_state:
+                    media_options.append("Uploaded file")
+                if 'frames' in st.session_state:
+                    media_options.append("Extracted frame")
+                
+                media_option = st.radio("Include media with your message:", media_options)
+                
+                media = None
+                if media_option == "Uploaded file" and 'processed_file' in st.session_state:
+                    media = st.session_state.processed_file
+                elif media_option == "Extracted frame" and 'frames' in st.session_state:
+                    frame_index = st.selectbox("Select frame:", range(len(st.session_state.frames)))
+                    media = st.session_state.frames[frame_index]
+
+                st.session_state.current_input = {"text": user_input, "media": media}
+                st.rerun()
+        except Exception as e:
+            st.error(f"Error configuring API Key: {str(e)}")
+    else:
+        st.info("Enter your API Key in the sidebar to start chatting.")
