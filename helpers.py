@@ -56,14 +56,28 @@ def get_gemini_response(chat, user_input, file=None, safety_settings=None):
             response = chat.send_message(user_input)
         return response.text
     except exceptions.GoogleAPICallError as e:
-        if "finish_reason: SAFETY" in str(e):
-            error_message = ("The image was blocked due to safety concerns. "
-                             "This can happen if the image contains sensitive or explicit content. "
-                             "Please try a different image or adjust the safety settings.")
-            st.warning(error_message)
-            return error_message
+        error_message = str(e)
+        if "finish_reason: SAFETY" in error_message:
+            # Extract safety categories that triggered the filter
+            triggered_categories = [
+                category for category in ["HARM_CATEGORY_SEXUALLY_EXPLICIT", 
+                                          "HARM_CATEGORY_HATE_SPEECH", 
+                                          "HARM_CATEGORY_HARASSMENT", 
+                                          "HARM_CATEGORY_DANGEROUS_CONTENT"]
+                if category in error_message
+            ]
+            
+            user_message = ("The response was blocked due to safety concerns. "
+                            "The content may have been flagged for the following reasons:\n")
+            for category in triggered_categories:
+                user_message += f"- {category.replace('HARM_CATEGORY_', '').replace('_', ' ').title()}\n"
+            user_message += ("\nPlease try rephrasing your request or adjusting the safety settings "
+                             "if you believe this is an error.")
+            
+            st.warning(user_message)
+            return user_message
         else:
-            st.error(f"Error getting Gemini response: {str(e)}")
+            st.error(f"Error getting Gemini response: {error_message}")
             return None
     except Exception as e:
         st.error(f"Unexpected error: {str(e)}")
