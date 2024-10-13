@@ -79,9 +79,9 @@ if 'chat' in st.session_state:
                 st.image(processed_file, caption='Uploaded Image', use_column_width=False, width=int(processed_file.width * 0.5))
                 file_type = "image"
                 prompts = IMAGE_PROMPTS
+                st.info("The image will be sent to Gemini API when you select an analysis option or enter a custom prompt.")
             elif uploaded_file.type.startswith('video/'):
                 st.video(uploaded_file, start_time=0)
-                st.info("Note: The full video will be sent to the API for analysis. This may take some time depending on the video length.")
                 file_type = "video"
                 prompts = VIDEO_PROMPTS
                 
@@ -95,29 +95,66 @@ if 'chat' in st.session_state:
                     
                     analyze_option = st.radio("Choose analysis option:", 
                                               ["Analyze full video", "Analyze extracted frames"])
+                    if analyze_option == "Analyze full video":
+                        st.info("The entire video will be sent to Gemini API when you select an analysis option or enter a custom prompt.")
+                    else:
+                        st.info(f"The {len(frames)} extracted frames will be sent individually to Gemini API when you select an analysis option or enter a custom prompt.")
+                    
                     if analyze_option == "Analyze extracted frames":
                         file_type = "video_frames"
                         processed_file = frames
+                else:
+                    st.info("The entire video will be sent to Gemini API when you select an analysis option or enter a custom prompt.")
             elif uploaded_file.type.startswith('audio/'):
                 st.audio(uploaded_file)
-                st.info("The full audio file will be sent to the API for analysis.")
                 file_type = "audio"
                 prompts = AUDIO_PROMPTS
+                st.info("The full audio file will be sent to Gemini API when you select an analysis option or enter a custom prompt.")
             
             st.subheader("Analysis Options")
-            for action, prompt in prompts.items():
-                if st.button(action):
+            
+            # Custom prompt input
+            custom_prompt = st.text_input("Enter a custom prompt for analysis:", "")
+            
+            # Combine predefined prompts and custom prompt
+            all_prompts = {**prompts, "Custom Prompt": custom_prompt}
+            
+            # Create columns for buttons
+            cols = st.columns(len(all_prompts))
+            
+            for i, (action, prompt) in enumerate(all_prompts.items()):
+                if cols[i].button(action) or (action == "Custom Prompt" and st.button("Analyze with Custom Prompt")):
+                    if action == "Custom Prompt" and not custom_prompt.strip():
+                        st.warning("Please enter a custom prompt before analyzing.")
+                        continue
+                    
                     with st.spinner(f"Analyzing {file_type}..."):
                         if file_type == "video_frames":
+                            st.info(f"Sending {len(processed_file)} frames to Gemini API for analysis...")
                             responses = []
                             for i, frame in enumerate(processed_file):
                                 response = get_gemini_response(st.session_state.chat, f"{prompt} (Frame {i+1})", frame)
                                 responses.append(f"Frame {i+1}: {response}")
                             response = "\n\n".join(responses)
                         else:
+                            st.info(f"Sending the {file_type} to Gemini API for analysis...")
                             response = get_gemini_response(st.session_state.chat, prompt, processed_file)
                         st.session_state.messages.append({"role": "assistant", "content": response})
                         st.chat_message("assistant").markdown(response)
+
+    # Regular chat input for text-based queries
+    user_input = st.chat_input("Ask Gemini or enter a prompt for the uploaded media...")
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        st.chat_message("user").markdown(user_input)
+        
+        if uploaded_file:
+            response = get_gemini_response(st.session_state.chat, user_input, processed_file)
+        else:
+            response = get_gemini_response(st.session_state.chat, user_input)
+        
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.chat_message("assistant").markdown(response)
 
 else:
     st.info("Enter your API Key in the sidebar to start chatting.")
