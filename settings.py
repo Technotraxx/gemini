@@ -26,8 +26,7 @@ IMAGE_PROMPTS = {
 PAGE_CONFIG = {
     "page_title": "Chat with Gemini!",
     "page_icon": ":robot_face:",
-    "layout": "wide",
-}
+ }
 
 # Video analysis prompts
 VIDEO_PROMPTS = {
