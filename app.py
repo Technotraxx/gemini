@@ -9,22 +9,11 @@ from helpers import (
     clear_chat_history,
     extract_video_frames
 )
-from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, VIDEO_PROMPTS, AUDIO_PROMPTS, PAGE_CONFIG
+from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, VIDEO_PROMPTS, AUDIO_PROMPTS, PAGE_CONFIG, ACCEPTED_FILE_TYPES
+from layout import compact_file_uploader, horizontal_radio_buttons, floating_chat_input, card_container
 
 # Configure Streamlit page
 st.set_page_config(**PAGE_CONFIG, layout="wide")
-
-# Custom CSS to limit image size
-st.markdown("""
-    <style>
-    .uploaded-image {
-        max-width: 300px;
-        max-height: 300px;
-        width: auto;
-        height: auto;
-    }
-    </style>
-    """, unsafe_allow_html=True)
 
 # Sidebar configuration
 with st.sidebar:
@@ -72,9 +61,8 @@ with left_column:
         clear_chat_history()
         st.rerun()
 
-    # File upload
-    uploaded_file = st.file_uploader("Upload an image, video, or audio file (optional)", 
-                                     type=['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg'])
+    # Compact file uploader
+    uploaded_file = compact_file_uploader("Upload file", ACCEPTED_FILE_TYPES)
     if uploaded_file:
         st.session_state.processed_file = upload_and_process_file(uploaded_file)
         if uploaded_file.type.startswith('image/'):
@@ -83,32 +71,21 @@ with left_column:
         elif uploaded_file.type.startswith('video/'):
             st.video(uploaded_file, start_time=0)
             prompts = VIDEO_PROMPTS
-            if st.checkbox("Extract frames for analysis"):
-                frame_interval = st.slider("Select frame interval (seconds)", 1, 60, 10)
-                st.session_state.frames = extract_video_frames(uploaded_file, frame_interval)
-                st.write(f"Extracted {len(st.session_state.frames)} frames")
-                st.image(st.session_state.frames[0], caption="First extracted frame", use_column_width=False, width=300)
         elif uploaded_file.type.startswith('audio/'):
             st.audio(uploaded_file)
             prompts = AUDIO_PROMPTS
         
-        # Quick Analysis Options (after file upload)
+        # Horizontal Quick Analysis Options
         st.subheader("Quick Analysis Options")
-        for action, prompt in prompts.items():
-            if st.button(action):
-                st.session_state.current_analysis = {"action": action, "prompt": prompt}
-                st.rerun()
-
-    # Chat input
-    if 'chat' in st.session_state:
-        user_input = st.chat_input("Ask Gemini or enter a prompt...")
-        if user_input:
-            media = st.session_state.processed_file if 'processed_file' in st.session_state else None
-            st.session_state.current_input = {"text": user_input, "media": media}
+        selected_analysis = horizontal_radio_buttons(list(prompts.keys()), "analysis")
+        if selected_analysis:
+            st.session_state.current_analysis = {"action": selected_analysis, "prompt": prompts[selected_analysis]}
             st.rerun()
 
-    else:
-        st.info("Enter your API Key in the sidebar to start chatting.")
+    # Card-based layout for chat messages
+    if 'messages' in st.session_state:
+        for message in st.session_state.messages:
+            card_container(message['role'].capitalize(), message['content'])
 
 with right_column:
     st.subheader("Chat History and Responses")
@@ -130,6 +107,13 @@ with right_column:
             st.session_state.messages.append({"role": "assistant", "content": response})
             st.chat_message("assistant").markdown(response)
         del st.session_state.current_analysis
+
+    # Floating chat input
+    user_input = floating_chat_input()
+    if user_input:
+        media = st.session_state.processed_file if 'processed_file' in st.session_state else None
+        st.session_state.current_input = {"text": user_input, "media": media}
+        st.rerun()
 
     if 'current_input' in st.session_state:
         st.session_state.messages.append({"role": "user", "content": st.session_state.current_input['text']})
