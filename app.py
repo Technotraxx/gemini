@@ -35,7 +35,7 @@ with st.sidebar:
 
     if st.button("Clear Chat"):
         clear_chat_history()
-        st.experimental_rerun()
+        st.rerun()  # Changed from st.experimental_rerun() to st.rerun()
 
 # Main chat interface
 st.title("🤖 Chat with Gemini")
