@@ -10,6 +10,7 @@ from helpers import (
     extract_video_frames
 )
 from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, VIDEO_PROMPTS, AUDIO_PROMPTS, PAGE_CONFIG, ACCEPTED_FILE_TYPES
+from layout import compact_file_uploader, horizontal_radio_buttons
 
 # Configure Streamlit page
 st.set_page_config(**PAGE_CONFIG, layout="wide")
@@ -22,7 +23,7 @@ if 'current_model' not in st.session_state:
 
 # Sidebar configuration
 with st.sidebar:
-    st.title("Configuration")
+    st.title("🤖 Chat with Gemini")
     api_key = st.text_input("Enter your Gemini API Key", type="password")
     selected_model = st.selectbox("Select Gemini Model", list(MODEL_OPTIONS.keys()))
     
@@ -57,22 +58,15 @@ with st.sidebar:
         st.warning("Please enter your Gemini API Key to start chatting.")
 
 # Main content
-left_column, right_column = st.columns([2, 3])
+left_column, right_column = st.columns([1, 3])
 
 with left_column:
-    st.title("🤖 Chat with Gemini")
-
-    if st.button("Clear Chat"):
-        clear_chat_history()
-        st.rerun()
-
-    # File upload
-    uploaded_file = st.file_uploader("Upload an image, video, or audio file (optional)", 
-                                     type=ACCEPTED_FILE_TYPES)
+    # Compact file uploader
+    uploaded_file = compact_file_uploader("Upload file", ACCEPTED_FILE_TYPES)
     if uploaded_file:
         st.session_state.processed_file = upload_and_process_file(uploaded_file)
         if uploaded_file.type.startswith('image/'):
-            st.image(st.session_state.processed_file, caption='Uploaded Image', use_column_width=False, width=300)
+            st.image(st.session_state.processed_file, caption='Uploaded Image', use_column_width=True)
             prompts = IMAGE_PROMPTS
         elif uploaded_file.type.startswith('video/'):
             st.video(uploaded_file, start_time=0)
@@ -83,12 +77,10 @@ with left_column:
         
         # Horizontal Quick Analysis Options
         st.subheader("Quick Analysis Options")
-        cols = st.columns(len(prompts))
-        for i, (action, prompt) in enumerate(prompts.items()):
-            with cols[i]:
-                if st.button(action):
-                    st.session_state.current_analysis = {"action": action, "prompt": prompt}
-                    st.rerun()
+        selected_action = horizontal_radio_buttons(prompts.keys(), "analysis_options")
+        if selected_action:
+            st.session_state.current_analysis = {"action": selected_action, "prompt": prompts[selected_action]}
+            st.rerun()
 
     # Chat input
     if 'chat' in st.session_state:
@@ -117,6 +109,11 @@ with left_column:
 
 with right_column:
     st.subheader("Chat History and Responses")
+    
+    # Clear chat button as an icon
+    if st.button("🗑️", help="Clear Chat"):
+        clear_chat_history()
+        st.rerun()
     
     # Display chat history
     display_chat_history(st.session_state.get('messages', []))
