@@ -7,22 +7,11 @@ def compact_file_uploader(label, accepted_types):
     return uploaded_file
 
 def horizontal_radio_buttons(options, key):
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        if st.button(options[0], key=f"{key}_1"):
-            return options[0]
-    with col2:
-        if st.button(options[1], key=f"{key}_2"):
-            return options[1]
-    with col3:
-        if st.button(options[2], key=f"{key}_3"):
-            return options[2]
-    with col4:
-        if st.button(options[3], key=f"{key}_4"):
-            return options[3]
-    with col5:
-        if st.button(options[4], key=f"{key}_5"):
-            return options[4]
+    cols = st.columns(len(options))
+    for i, (option, col) in enumerate(zip(options, cols)):
+        with col:
+            if st.button(option, key=f"{key}_{i}"):
+                return option
     return None
 
 def floating_chat_input():
