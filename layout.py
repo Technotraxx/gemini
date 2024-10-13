@@ -89,12 +89,23 @@ def render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_confi
     # Chat input
     if api_key:
         try:
-            import google.generativeai as genai
             genai.configure(api_key=api_key)
+            
+            # Set default safety settings to BLOCK_NONE
+            default_safety_settings = [
+                {"category": category, "threshold": HarmBlockThreshold.BLOCK_NONE}
+                for category in [
+                    HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT
+                ]
+            ]
+            
             model = genai.GenerativeModel(
                 MODEL_OPTIONS[selected_model],
                 generation_config=generation_config,
-                safety_settings=safety_settings
+                safety_settings=default_safety_settings
             )
             if 'chat' not in st.session_state or st.session_state.current_model != MODEL_OPTIONS[selected_model]:
                 st.session_state.current_model = MODEL_OPTIONS[selected_model]
