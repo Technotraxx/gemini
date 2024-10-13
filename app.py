@@ -6,7 +6,8 @@ from helpers import (
     display_chat_history, 
     get_gemini_response, 
     init_chat_session,
-    clear_chat_history
+    clear_chat_history,
+    extract_video_frames
 )
 from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG, IMAGE_PROMPTS, VIDEO_PROMPTS, AUDIO_PROMPTS, PAGE_CONFIG
 
@@ -75,35 +76,48 @@ if 'chat' in st.session_state:
         processed_file = upload_and_process_file(uploaded_file)
         if processed_file:
             if uploaded_file.type.startswith('image/'):
-                # Display image at 50% of its original size
                 st.image(processed_file, caption='Uploaded Image', use_column_width=False, width=int(processed_file.width * 0.5))
+                file_type = "image"
                 prompts = IMAGE_PROMPTS
             elif uploaded_file.type.startswith('video/'):
-                # For videos, we'll use a container to limit the width to 50%
-                video_container = st.container()
-                with video_container:
-                    st.video(uploaded_file, start_time=0)
-                st.markdown(
-                    """
-                    <style>
-                    .element-container:has(video) {
-                        width: 50% !important;
-                    }
-                    </style>
-                    """,
-                    unsafe_allow_html=True
-                )
+                st.video(uploaded_file, start_time=0)
+                st.info("Note: The full video will be sent to the API for analysis. This may take some time depending on the video length.")
+                file_type = "video"
                 prompts = VIDEO_PROMPTS
+                
+                # Option to extract frames
+                if st.checkbox("Extract frames for analysis"):
+                    frame_interval = st.slider("Select frame interval (seconds)", 1, 60, 10)
+                    frames = extract_video_frames(uploaded_file, frame_interval)
+                    st.write(f"Extracted {len(frames)} frames")
+                    for i, frame in enumerate(frames):
+                        st.image(frame, caption=f"Frame at {i * frame_interval} seconds", use_column_width=False, width=200)
+                    
+                    analyze_option = st.radio("Choose analysis option:", 
+                                              ["Analyze full video", "Analyze extracted frames"])
+                    if analyze_option == "Analyze extracted frames":
+                        file_type = "video_frames"
+                        processed_file = frames
             elif uploaded_file.type.startswith('audio/'):
                 st.audio(uploaded_file)
+                st.info("The full audio file will be sent to the API for analysis.")
+                file_type = "audio"
                 prompts = AUDIO_PROMPTS
             
-            cols = st.columns(len(prompts))
-            for i, (action, prompt) in enumerate(prompts.items()):
-                if cols[i].button(action):
-                    response = get_gemini_response(st.session_state.chat, prompt, processed_file)
-                    st.session_state.messages.append({"role": "assistant", "content": response})
-                    st.chat_message("assistant").markdown(response)
+            st.subheader("Analysis Options")
+            for action, prompt in prompts.items():
+                if st.button(action):
+                    with st.spinner(f"Analyzing {file_type}..."):
+                        if file_type == "video_frames":
+                            responses = []
+                            for i, frame in enumerate(processed_file):
+                                response = get_gemini_response(st.session_state.chat, f"{prompt} (Frame {i+1})", frame)
+                                responses.append(f"Frame {i+1}: {response}")
+                            response = "\n\n".join(responses)
+                        else:
+                            response = get_gemini_response(st.session_state.chat, prompt, processed_file)
+                        st.session_state.messages.append({"role": "assistant", "content": response})
+                        st.chat_message("assistant").markdown(response)
 
 else:
     st.info("Enter your API Key in the sidebar to start chatting.")
