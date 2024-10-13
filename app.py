@@ -72,60 +72,38 @@ with left_column:
         clear_chat_history()
         st.rerun()
 
-    # Chat input and Quick Analysis Options (moved to the top)
+    # File upload
+    uploaded_file = st.file_uploader("Upload an image, video, or audio file (optional)", 
+                                     type=['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg'])
+    if uploaded_file:
+        st.session_state.processed_file = upload_and_process_file(uploaded_file)
+        if uploaded_file.type.startswith('image/'):
+            st.image(st.session_state.processed_file, caption='Uploaded Image', use_column_width=False, width=300)
+            prompts = IMAGE_PROMPTS
+        elif uploaded_file.type.startswith('video/'):
+            st.video(uploaded_file, start_time=0)
+            prompts = VIDEO_PROMPTS
+            if st.checkbox("Extract frames for analysis"):
+                frame_interval = st.slider("Select frame interval (seconds)", 1, 60, 10)
+                st.session_state.frames = extract_video_frames(uploaded_file, frame_interval)
+                st.write(f"Extracted {len(st.session_state.frames)} frames")
+                st.image(st.session_state.frames[0], caption="First extracted frame", use_column_width=False, width=300)
+        elif uploaded_file.type.startswith('audio/'):
+            st.audio(uploaded_file)
+            prompts = AUDIO_PROMPTS
+        
+        # Quick Analysis Options (after file upload)
+        st.subheader("Quick Analysis Options")
+        for action, prompt in prompts.items():
+            if st.button(action):
+                st.session_state.current_analysis = {"action": action, "prompt": prompt}
+                st.rerun()
+
+    # Chat input
     if 'chat' in st.session_state:
         user_input = st.chat_input("Ask Gemini or enter a prompt...")
-        
-        st.subheader("Quick Analysis Options")
-        if 'processed_file' in st.session_state:
-            file_type = st.session_state.processed_file.type if hasattr(st.session_state.processed_file, 'type') else None
-            if file_type and file_type.startswith('image/'):
-                prompts = IMAGE_PROMPTS
-            elif file_type and file_type.startswith('video/'):
-                prompts = VIDEO_PROMPTS
-            elif file_type and file_type.startswith('audio/'):
-                prompts = AUDIO_PROMPTS
-            else:
-                prompts = {}
-
-            for action, prompt in prompts.items():
-                if st.button(action):
-                    st.session_state.current_analysis = {"action": action, "prompt": prompt}
-                    st.rerun()
-
-        # File upload (moved below chat input and analysis options)
-        uploaded_file = st.file_uploader("Upload an image, video, or audio file (optional)", 
-                                         type=['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg'])
-        if uploaded_file:
-            st.session_state.processed_file = upload_and_process_file(uploaded_file)
-            if uploaded_file.type.startswith('image/'):
-                st.image(st.session_state.processed_file, caption='Uploaded Image', use_column_width=False, width=300)
-            elif uploaded_file.type.startswith('video/'):
-                st.video(uploaded_file, start_time=0)
-                if st.checkbox("Extract frames for analysis"):
-                    frame_interval = st.slider("Select frame interval (seconds)", 1, 60, 10)
-                    st.session_state.frames = extract_video_frames(uploaded_file, frame_interval)
-                    st.write(f"Extracted {len(st.session_state.frames)} frames")
-                    st.image(st.session_state.frames[0], caption="First extracted frame", use_column_width=False, width=300)
-            elif uploaded_file.type.startswith('audio/'):
-                st.audio(uploaded_file)
-
         if user_input:
-            media_options = ["No media"]
-            if 'processed_file' in st.session_state:
-                media_options.append("Uploaded file")
-            if 'frames' in st.session_state:
-                media_options.append("Extracted frame")
-            
-            media_option = st.radio("Include media with your message:", media_options)
-            
-            media = None
-            if media_option == "Uploaded file" and 'processed_file' in st.session_state:
-                media = st.session_state.processed_file
-            elif media_option == "Extracted frame" and 'frames' in st.session_state:
-                frame_index = st.selectbox("Select frame:", range(len(st.session_state.frames)))
-                media = st.session_state.frames[frame_index]
-
+            media = st.session_state.processed_file if 'processed_file' in st.session_state else None
             st.session_state.current_input = {"text": user_input, "media": media}
             st.rerun()
 
