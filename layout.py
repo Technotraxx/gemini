@@ -75,8 +75,7 @@ def render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_confi
             with col:
                 if st.button(option, key=f"button_{option}", use_container_width=True):
                     st.session_state.current_analysis = {"action": option, "prompt": st.session_state.prompts[option]}
-                    # Add the button press to the messages
-                    st.session_state.messages.append({"role": "user", "content": f"[{option}] {st.session_state.prompts[option]}"})
+                    # Remove the message addition from here
                     st.rerun()
 
     # Chat input
