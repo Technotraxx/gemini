@@ -40,17 +40,20 @@ def render_sidebar():
                 "Block most": HarmBlockThreshold.BLOCK_LOW_AND_ABOVE
             }
             
-            harassment_setting = st.selectbox("Harassment", list(safety_options.keys()), index=1)
-            hate_speech_setting = st.selectbox("Hate Speech", list(safety_options.keys()), index=1)
-            sexually_explicit_setting = st.selectbox("Sexually Explicit", list(safety_options.keys()), index=1)
-            dangerous_content_setting = st.selectbox("Dangerous Content", list(safety_options.keys()), index=1)
+            safety_categories = [
+                ("Harassment", HarmCategory.HARM_CATEGORY_HARASSMENT),
+                ("Hate Speech", HarmCategory.HARM_CATEGORY_HATE_SPEECH),
+                ("Sexually Explicit", HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT),
+                ("Dangerous Content", HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
+            ]
 
-            safety_settings = {
-                HarmCategory.HARASSMENT: safety_options[harassment_setting],
-                HarmCategory.HATE_SPEECH: safety_options[hate_speech_setting],
-                HarmCategory.SEXUALLY_EXPLICIT: safety_options[sexually_explicit_setting],
-                HarmCategory.DANGEROUS_CONTENT: safety_options[dangerous_content_setting]
-            }
+            safety_settings = []
+            for category_name, category in safety_categories:
+                setting = st.selectbox(category_name, list(safety_options.keys()), index=1)
+                safety_settings.append({
+                    "category": category,
+                    "threshold": safety_options[setting]
+                })
 
             generation_config = {
                 "temperature": temperature,
