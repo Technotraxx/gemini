@@ -114,11 +114,13 @@ with right_column:
                     st.session_state.current_analysis = {"action": option, "prompt": st.session_state.prompts[option]}
                     st.rerun()
 
+    # Display chat history before processing new inputs
+    display_chat_history(st.session_state.get('messages', []))
+
     # Process current analysis or input
     if 'current_analysis' in st.session_state:
         user_message = f"[{st.session_state.current_analysis['action']}] {st.session_state.current_analysis['prompt']}"
-        st.session_state.messages.insert(0, {"role": "user", "content": user_message})
-        st.chat_message("user").markdown(user_message)
+        st.session_state.messages.append({"role": "user", "content": user_message})
         
         with st.spinner(f"Analyzing with {st.session_state.current_analysis['action']}..."):
             if 'frames' in st.session_state and st.session_state.get('processed_file') and st.session_state.processed_file.type.startswith('video/'):
@@ -129,20 +131,17 @@ with right_column:
                 response = "\n\n".join(responses)
             else:
                 response = get_gemini_response(st.session_state.chat, st.session_state.current_analysis['prompt'], st.session_state.get('processed_file'), safety_settings)
-            st.session_state.messages.insert(0, {"role": "assistant", "content": response})
-            st.chat_message("assistant").markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
         del st.session_state.current_analysis
         st.rerun()
         
     if 'current_input' in st.session_state:
-        st.session_state.messages.insert(0, {"role": "user", "content": st.session_state.current_input['text']})
-        st.chat_message("user").markdown(st.session_state.current_input['text'])
+        st.session_state.messages.append({"role": "user", "content": st.session_state.current_input['text']})
         
         with st.spinner("Gemini is thinking..."):
             response = get_gemini_response(st.session_state.chat, st.session_state.current_input['text'], st.session_state.current_input['media'], safety_settings)
         
-        st.session_state.messages.insert(0, {"role": "assistant", "content": response})
-        st.chat_message("assistant").markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
         del st.session_state.current_input
         st.rerun()
 
