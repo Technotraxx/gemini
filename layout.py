@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from helpers import clear_chat_history, display_chat_history
+from settings import MODEL_OPTIONS, DEFAULT_GENERATION_CONFIG
 
 def compact_file_uploader(label, accepted_types):
     uploaded_file = st.file_uploader(label, type=accepted_types, key="file_uploader")
