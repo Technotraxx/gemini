@@ -86,11 +86,14 @@ with right_column:
 
     # Quick Analysis Options
     if 'processed_file' in st.session_state:
-        st.markdown("**Quick Analysis Options:**", unsafe_allow_html=True)
-        selected_action = horizontal_radio_buttons(prompts.keys(), "analysis_options")
-        if selected_action:
-            st.session_state.current_analysis = {"action": selected_action, "prompt": prompts[selected_action]}
-            st.rerun()
+        col1, *cols = st.columns([2] + [1] * len(prompts))
+        with col1:
+            st.markdown("**Quick Analysis Options:**", unsafe_allow_html=True)
+        for option, col in zip(prompts.keys(), cols):
+            with col:
+                if st.button(option):
+                    st.session_state.current_analysis = {"action": option, "prompt": prompts[option]}
+                    st.rerun()
 
     # Chat input
     if 'chat' in st.session_state:
@@ -115,6 +118,9 @@ with right_column:
             st.rerun()
     else:
         st.info("Enter your API Key in the sidebar to start chatting.")
+    
+    # Add a separator
+    st.markdown("---")
     
     # Display chat history
     display_chat_history(st.session_state.get('messages', []))
