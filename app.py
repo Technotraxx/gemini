@@ -58,9 +58,10 @@ with st.sidebar:
         st.warning("Please enter your Gemini API Key to start chatting.")
 
 # Main content
-left_column, right_column = st.columns([1, 3])
+left_column, _, right_column = st.columns([2, 1, 4])
 
 with left_column:
+    st.subheader("File Upload and Preview")
     # Compact file uploader
     uploaded_file = compact_file_uploader("Upload file", ACCEPTED_FILE_TYPES)
     if uploaded_file:
