@@ -58,7 +58,7 @@ with left_column:
             st.session_state.prompts = AUDIO_PROMPTS
 
 with right_column:
-    render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_config, safety_settings)
+    render_main_content(api_key, selected_model, MODEL_OPTIONS, generation_config, safety_settings if safety_settings else None)
 
     # Process current analysis or input
     if 'current_analysis' in st.session_state:
@@ -66,11 +66,11 @@ with right_column:
             if 'frames' in st.session_state and st.session_state.get('processed_file') and st.session_state.processed_file.type.startswith('video/'):
                 responses = []
                 for j, frame in enumerate(st.session_state.frames):
-                    response = get_gemini_response(st.session_state.chat, f"{st.session_state.current_analysis['prompt']} (Frame {j+1})", frame)
+                    response = get_gemini_response(st.session_state.chat, f"{st.session_state.current_analysis['prompt']} (Frame {j+1})", frame, safety_settings)
                     responses.append(f"Frame {j+1}: {response}")
                 response = "\n\n".join(responses)
             else:
-                response = get_gemini_response(st.session_state.chat, st.session_state.current_analysis['prompt'], st.session_state.get('processed_file'))
+                response = get_gemini_response(st.session_state.chat, st.session_state.current_analysis['prompt'], st.session_state.get('processed_file'), safety_settings)
             st.session_state.messages.append({"role": "assistant", "content": response})
             st.chat_message("assistant").markdown(response)
         del st.session_state.current_analysis
@@ -80,7 +80,7 @@ with right_column:
         st.chat_message("user").markdown(st.session_state.current_input['text'])
         
         with st.spinner("Gemini is thinking..."):
-            response = get_gemini_response(st.session_state.chat, st.session_state.current_input['text'], st.session_state.current_input['media'])
+            response = get_gemini_response(st.session_state.chat, st.session_state.current_input['text'], st.session_state.current_input['media'], safety_settings)
         
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.chat_message("assistant").markdown(response)
